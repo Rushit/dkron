@@ -57,11 +57,19 @@ func New() *HTTP {
 //	}
 func (s *HTTP) Execute(args *types.ExecuteRequest, cb dkplugin.StatusHelper) (*types.ExecuteResponse, error) {
 	out, err := s.ExecuteImpl(args)
-	resp := &types.ExecuteResponse{Output: out}
-	if err != nil {
-		resp.Error = err.Error()
-	}
-	return resp, nil
+	respChan := make(chan *types.ExecuteResponse)
+
+	go func() {
+		defer close(respChan)
+		resp := &types.ExecuteResponse{Output: out}
+		if err != nil {
+			resp.Error = err.Error()
+		}
+		respChan <- resp
+	}()
+
+	return <-respChan, nil
+
 }
 
 // ExecuteImpl do http request
@@ -71,7 +79,7 @@ func (s *HTTP) ExecuteImpl(args *types.ExecuteRequest) ([]byte, error) {
 	if args.Config["debug"] != "" {
 		debug = true
 		log.Printf("config  %#v\n\n", args.Config)
-		output.Write([]byte(fmt.Sprintf("Config: %#v\n", args.Config)))
+		// output.Write([]byte(fmt.Sprintf("Config: %#v\n", args.Config)))
 	}
 
 	if args.Config["url"] == "" {

@@ -2,6 +2,7 @@ package dkron
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -108,6 +109,15 @@ func (n *notifier) report() string {
 		exgStr)
 }
 
+func (n *notifier) buildJson() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(n.Execution); err != nil {
+		n.logger.WithError(err).Error("notifier: error encoding json")
+		return bytes.NewBuffer([]byte("Failed to encode json: " + err.Error()))
+	}
+	return buf
+}
+
 func (n *notifier) buildTemplate(templ string) *bytes.Buffer {
 	t, e := template.New("report").Parse(templ)
 	if e != nil {
@@ -212,7 +222,7 @@ func (n *notifier) callPreExecutionWebhook() error {
 }
 
 func (n *notifier) callExecutionWebhook() error {
-	out := n.buildTemplate(n.Config.WebhookPayload)
+	out := n.buildJson()
 	req, err := http.NewRequest("POST", n.Config.WebhookEndpoint, out)
 	if err != nil {
 		return err

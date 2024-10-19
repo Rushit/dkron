@@ -14,3 +14,4 @@ COPY . .
 RUN go install ./...
 
 CMD ["dkron"]
+

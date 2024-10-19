@@ -187,6 +187,7 @@ const (
 	DefaultBindPort      int           = 8946
 	DefaultRPCPort       int           = 6868
 	DefaultRetryInterval time.Duration = time.Second * 30
+
 )
 
 var ErrResolvingHost = errors.New("error resolving hostname")

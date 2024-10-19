@@ -1,7 +1,6 @@
 package dkron
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"expvar"
@@ -16,10 +15,8 @@ import (
 	"time"
 
 	metrics "github.com/armon/go-metrics"
-	"github.com/devopsfaith/krakend-usage/client"
 	"github.com/distribworks/dkron/v4/plugin"
 	proto "github.com/distribworks/dkron/v4/types"
-	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb"
@@ -624,7 +621,6 @@ func (a *Agent) StartServer() {
 		}
 	}()
 	go a.monitorLeadership()
-	a.startReporter()
 }
 
 // Utility method to get leader nodename
@@ -903,31 +899,4 @@ func (a *Agent) checkAndSelectServer() (string, error) {
 		}
 	}
 	return "", ErrNoSuitableServer
-}
-
-func (a *Agent) startReporter() {
-	if a.config.DisableUsageStats || a.config.DevMode {
-		a.logger.Info("agent: usage report client disabled")
-		return
-	}
-
-	clusterID, err := a.config.Hash()
-	if err != nil {
-		a.logger.Warn("agent: unable to hash the service configuration:", err.Error())
-		return
-	}
-
-	go func() {
-		serverID, _ := uuid.GenerateUUID()
-		a.logger.Info(fmt.Sprintf("agent: registering usage stats for cluster ID '%s'", clusterID))
-
-		if err := client.StartReporter(context.Background(), client.Options{
-			ClusterID: clusterID,
-			ServerID:  serverID,
-			URL:       "https://stats.dkron.io",
-			Version:   fmt.Sprintf("%s %s", Name, Version),
-		}); err != nil {
-			a.logger.Warn("agent: unable to create the usage report client:", err.Error())
-		}
-	}()
 }
