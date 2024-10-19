@@ -111,7 +111,23 @@ func (n *notifier) report() string {
 
 func (n *notifier) buildJson() *bytes.Buffer {
 	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(n.Execution); err != nil {
+	output := n.Execution.Output
+	if n.Execution.Success {
+		output = "OK"
+	}
+	run := Execution{
+		Id:         n.Execution.Id,
+		JobName:    n.Execution.JobName,
+		StartedAt:  n.Execution.StartedAt,
+		FinishedAt: n.Execution.FinishedAt,
+		Success:    n.Execution.Success,
+		Output:     output,
+		NodeName:   n.Execution.NodeName,
+		Group:      n.Execution.Group,
+		Attempt:    n.Execution.Attempt,
+	}
+
+	if err := json.NewEncoder(buf).Encode(run); err != nil {
 		n.logger.WithError(err).Error("notifier: error encoding json")
 		return bytes.NewBuffer([]byte("Failed to encode json: " + err.Error()))
 	}
